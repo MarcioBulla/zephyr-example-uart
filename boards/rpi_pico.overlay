@@ -1,4 +1,11 @@
 #include <zephyr/dt-bindings/pinctrl/rpi-pico-pinctrl-common.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+  zephyr,user{
+      user-button-gpios = <&gpio0 24 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+  };
+};
 
 &uart1 {
   pinctrl-0 = <&uart1_default>;
@@ -12,6 +19,7 @@
     group1 {
       pinmux = <UART1_TX_P4>;
     };
+
     group2 {
       pinmux = <UART1_RX_P5>;
       input-enable;
@@ -19,3 +27,4 @@
     };
   };
 };
+
