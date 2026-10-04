@@ -13,7 +13,7 @@ First, we need to build the project and successfully flash it to the board.
 
 ### Environment
 
-- Zephyr revision: `v4.4.0`
+- Zephyr revision: `v4.4.0-16104-g64437be51c30`
 - Board target: `esp32s2_lolin_mini/esp32s2`
 - Application: `zephyr-example-uart`
 - MCU: `ESP32-S2FNR2`
@@ -23,7 +23,7 @@ First, we need to build the project and successfully flash it to the board.
 
 ### Console Configuration
 
-- `zephyr,console = uart0`: `build/zephyr/zephyr.dts`
+- `zephyr,console = uart0`
 - Baud rate: `115200`
 - TX: GPIO16
 - RX: GPIO17
@@ -48,6 +48,54 @@ Flashing worked using `esptool` with `--before no-reset`.
 - UART0 TX idle voltage measured approximately 3.3 V on GPIO16.
 - After a normal reset, `esptool --before no-reset chip-id` could not connect, indicating that the MCU was no longer running the ROM bootloader.
 
-### Next Step
+## YD-RP2040 Bring-up
 
-Validate UART output and start the bring-up of the second MCU.
+The selected board is the YD-RP2040 by VCC-GND Studio.
+
+Zephyr does not provide an official board definition for this board, so `rpi_pico/rp2040` is currently being used as a compatibility baseline.
+
+Reference:
+https://circuitpython.org/board/vcc_gnd_yd_rp2040/
+
+### Differences from the Raspberry Pi Pico
+
+- 16 MB flash on this board revision;
+- USB-C connector;
+- Reset button;
+- User button on GPIO24;
+- NeoPixel RGB LED on GPIO23.
+
+### Current Baseline
+
+- Zephyr board target: `rpi_pico/rp2040`
+- Flash assumed by Zephyr: 2 MB
+- Actual board flash: 16 MB
+- `zephyr,console = uart0`
+- Baud rate: `115200`
+- TX: GPIO0
+- RX: GPIO1
+
+### Flashing
+
+The board was placed in BOOTSEL mode:
+
+1. Hold BOOT.
+2. Press RESET.
+3. Release RESET.
+4. Release BOOT.
+
+The board appeared as a removable USB drive.
+
+The generated firmware:
+
+`build/zephyr/zephyr.uf2`
+
+was copied to the BOOTSEL USB drive.
+
+After the copy completed, the drive disappeared and the board rebooted.
+
+### Verification
+
+- UART0 TX idle voltage measured approximately 3.3 V on GPIO0.
+- This is consistent with UART TX being idle HIGH on a 3.3 V logic interface.
+
