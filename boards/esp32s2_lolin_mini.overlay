@@ -1,23 +1,31 @@
 #include <zephyr/dt-bindings/pinctrl/esp32s2-pinctrl.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+  zephyr,user{
+    user-button-gpios = <&gpio0 0 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+  };
+};
+
 
 &uart1 {
-    pinctrl-0 = <&uart1_default>;
-    current-speed = <115200>;
-    pinctrl-names = "default";
-    status = "okay";
+  pinctrl-0 = <&uart1_default>;
+  current-speed = <115200>;
+  pinctrl-names = "default";
+  status = "okay";
 };
 
 &pinctrl {
-    uart1_default: uart1_default {
-        group1 {
-            pinmux = <UART1_TX_GPIO5>;
-            output-high;
-        };
-
-        group2 {
-            pinmux = <UART1_RX_GPIO7>;
-            bias-pull-up;
-        };
+  uart1_default: uart1_default {
+    group1 {
+      pinmux = <UART1_TX_GPIO5>;
+      output-high;
     };
+
+    group2 {
+      pinmux = <UART1_RX_GPIO7>;
+      bias-pull-up;
+    };
+  };
 };
 
