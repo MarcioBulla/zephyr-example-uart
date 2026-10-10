@@ -2,6 +2,37 @@
 
 The purpose of this project is to learn Zephyr by running a simple UART application on different boards.
 
+## Building
+
+The application supports the following Zephyr board targets:
+
+- `esp32s2_lolin_mini/esp32s2`
+- `rpi_pico/rp2040` (used for the YD-RP2040 board)
+
+Both targets can be built using the provided script:
+
+```bash
+./scripts/build-all.sh
+```
+
+The script invokes `west build` for each board, using separate build directories:
+
+```text
+build/
+├── esp32s2_lolin_mini/
+└── rpi_pico/
+```
+
+Build directories are reused for incremental builds. The script stops if a build fails.
+
+To build a single board manually:
+
+```bash
+west build -b rpi_pico/rp2040 -d build/rpi_pico -p auto .
+```
+
+The script must be executed from the application root directory.
+
 ## ESP32-S2 Bring-up
 
 One of the selected boards is the Wemos ESP32-S2 Mini:
