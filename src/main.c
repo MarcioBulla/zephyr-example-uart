@@ -4,14 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "zephyr/kernel.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/errno.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
-#include <zephyr/sleep.h>
-#include <zephyr/sys/atomic.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util_macro.h>
 
@@ -23,11 +22,11 @@ static const struct gpio_dt_spec user_button =
     GPIO_DT_SPEC_GET(ZEPHYR_USER_NODE, user_button_gpios);
 static struct gpio_callback user_button_cb_data;
 
-static atomic_t button_event = ATOMIC_INIT(0);
+K_SEM_DEFINE(press_sem, 0, 10);
 
 static void user_button_cb(const struct device *port, struct gpio_callback *cb,
                            gpio_port_pins_t pins) {
-  atomic_inc(&button_event);
+  k_sem_give(&press_sem);
 }
 
 int main(void) {
@@ -66,8 +65,8 @@ int main(void) {
   }
 
   while (true) {
-    printk("Button events: %ld\n", (long)atomic_get(&button_event));
-    k_msleep(500);
+    k_sem_take(&press_sem, K_FOREVER);
+    printk("Pressed!\n");
   }
 
   return 0;
