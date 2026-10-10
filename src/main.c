@@ -4,13 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "zephyr/kernel.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/errno.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util_macro.h>
 
@@ -65,8 +66,13 @@ int main(void) {
   }
 
   while (true) {
-    k_sem_take(&press_sem, K_FOREVER);
-    printk("Pressed!\n");
+    ret = k_sem_take(&press_sem, K_FOREVER);
+    if (ret != 0) {
+      printk("Error to take semaphore: %d\n", ret);
+      return ret;
+    }
+
+    uart_poll_out(uart1, 'B');
   }
 
   return 0;
