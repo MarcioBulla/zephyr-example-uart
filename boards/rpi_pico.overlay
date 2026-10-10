@@ -1,10 +1,11 @@
 #include <zephyr/dt-bindings/pinctrl/rpi-pico-pinctrl-common.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/led/led.h>
 #include <common/mem.h>
 
 / {
   zephyr,user{
-      user-button-gpios = <&gpio0 24 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+    user-button-gpios = <&gpio0 24 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
   };
 };
 
@@ -27,8 +28,36 @@
       bias-pull-up;
     };
   };
+
+  ws2812_default: ws2812_default {
+    group1 {
+      pinmux = <PIO0_P23>;
+      bias-pull-down;
+    };
+  };
 };
 
+&pio0 {
+  status = "okay";
+
+  pio-ws2812 {
+    compatible = "worldsemi,ws2812-rpi_pico-pio";
+
+    pinctrl-0 = <&ws2812_default>;
+    pinctrl-names = "default";
+
+    bit-waveform = <3>, <3>, <4>;
+
+    rgb_led: ws2812 {
+      frequency = <800000>;
+      chain-length = <1>;
+      color-mapping = <LED_COLOR_ID_GREEN
+                    LED_COLOR_ID_RED
+                    LED_COLOR_ID_BLUE>;
+      gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+    };
+  };
+};
 
 &flash0 {
   reg = < 0x10000000 DT_SIZE_M(16) >;
