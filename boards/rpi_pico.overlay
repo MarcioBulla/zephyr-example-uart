@@ -1,5 +1,6 @@
 #include <zephyr/dt-bindings/pinctrl/rpi-pico-pinctrl-common.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
+#include <common/mem.h>
 
 / {
   zephyr,user{
@@ -28,3 +29,12 @@
   };
 };
 
+
+&flash0 {
+  reg = < 0x10000000 DT_SIZE_M(16) >;
+  ranges = < 0x0 0x10000000 DT_SIZE_M(16) >;
+};
+
+&code_partition {
+  reg = <0x100 (DT_SIZE_M(16)- 0x100)>;
+};
