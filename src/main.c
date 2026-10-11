@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "zephyr/drivers/clock_control.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/errno.h>
@@ -44,19 +43,32 @@ static void user_button_cb(const struct device *port, struct gpio_callback *cb,
   k_work_reschedule(&user_button_work, K_MSEC(30));
 }
 
-K_MSGQ_DEFINE(rx_msgq, 1, 30, 1);
+K_MSGQ_DEFINE(rx_msgq, 1, 16, 1);
 
 static uint8_t rx_msg[1];
+static uint32_t rx_peak;
+static uint32_t rx_dropped;
 
 static void uart1_rx_cb(const struct device *dev, void *user_data) {
   uart_irq_update(uart1);
 
   if (uart_irq_rx_ready(uart1) == 1) {
     while (uart_fifo_read(uart1, rx_msg, 1) > 0) {
-      k_msgq_put(&rx_msgq, rx_msg, K_NO_WAIT);
+      if (k_msgq_put(&rx_msgq, rx_msg, K_NO_WAIT) == 0) {
+        uint32_t used = k_msgq_num_used_get(&rx_msgq);
+
+        if (used > rx_peak) {
+          rx_peak = used;
+        }
+      } else {
+        rx_dropped++;
+      }
     }
   }
 }
+
+static uint32_t rx_peak;
+static uint32_t rx_dropped;
 
 void rx_read_entry(void *, void *, void *) {
   uint8_t msg;
@@ -66,6 +78,8 @@ void rx_read_entry(void *, void *, void *) {
     printk("%c", msg);
     if (msg == '\n') {
       gpio_pin_toggle_dt(&led);
+
+      printk("RX queue peak: %u, dropped: %u\n", rx_peak, rx_dropped);
     }
   }
 }
