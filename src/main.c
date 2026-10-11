@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "zephyr/drivers/clock_control.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/errno.h>
@@ -14,6 +15,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util_macro.h>
+
+static const char board[] = CONFIG_BOARD_TARGET;
 
 #define UART1_NODE DT_NODELABEL(uart1)
 static const struct device *const uart1 = DEVICE_DT_GET(UART1_NODE);
@@ -41,7 +44,7 @@ static void user_button_cb(const struct device *port, struct gpio_callback *cb,
   k_work_reschedule(&user_button_work, K_MSEC(30));
 }
 
-K_MSGQ_DEFINE(rx_msgq, 1, 10, 1);
+K_MSGQ_DEFINE(rx_msgq, 1, 30, 1);
 
 static uint8_t rx_msg[1];
 
@@ -60,8 +63,10 @@ void rx_read_entry(void *, void *, void *) {
 
   while (true) {
     k_msgq_get(&rx_msgq, &msg, K_FOREVER);
-    printk("Received: %c\n", msg);
-    gpio_pin_toggle_dt(&led);
+    printk("%c", msg);
+    if (msg == '\n') {
+      gpio_pin_toggle_dt(&led);
+    }
   }
 }
 
@@ -121,6 +126,9 @@ int main(void) {
 
   uart_irq_rx_enable(uart1);
 
+  char text_msg[sizeof(board) + 1];
+  snprintf(text_msg, sizeof(text_msg), "%s\n", board);
+
   while (true) {
     ret = k_sem_take(&press_sem, K_FOREVER);
     if (ret != 0) {
@@ -128,7 +136,9 @@ int main(void) {
       return ret;
     }
 
-    uart_poll_out(uart1, 'B');
+    for (uint8_t i = 0; i < strlen(text_msg); i++) {
+      uart_poll_out(uart1, text_msg[i]);
+    }
   }
 
   return 0;
