@@ -23,6 +23,9 @@ static const struct gpio_dt_spec user_button =
     GPIO_DT_SPEC_GET(ZEPHYR_USER_NODE, user_button_gpios);
 static struct gpio_callback user_button_cb_data;
 
+#define LED0_NODE DT_ALIAS(led0)
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
+
 K_SEM_DEFINE(press_sem, 0, 10);
 
 static void user_button_cb(const struct device *port, struct gpio_callback *cb,
@@ -50,6 +53,7 @@ void rx_read_entry(void *, void *, void *) {
   while (true) {
     k_msgq_get(&rx_msgq, &msg, K_FOREVER);
     printk("Received: %c\n", msg);
+    gpio_pin_toggle_dt(&led);
   }
 }
 
@@ -67,11 +71,22 @@ int main(void) {
     return -ENODEV;
   }
 
+  if (!gpio_is_ready_dt(&led)) {
+    printk("LED0 not ready\n");
+    return -ENODEV;
+  }
+
   int ret;
 
   ret = gpio_pin_configure_dt(&user_button, GPIO_INPUT);
   if (ret != 0) {
     printk("Pin Configure error!\n");
+    return ret;
+  }
+
+  ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
+  if (ret != 0) {
+    printk("Pin Led Configure error!\n");
     return ret;
   }
 
