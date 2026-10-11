@@ -12,6 +12,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util_macro.h>
 
@@ -46,8 +47,8 @@ static void user_button_cb(const struct device *port, struct gpio_callback *cb,
 K_MSGQ_DEFINE(rx_msgq, 1, 16, 1);
 
 static uint8_t rx_msg[1];
-static uint32_t rx_peak;
-static uint32_t rx_dropped;
+static atomic_t rx_peak = ATOMIC_INIT(0);
+static atomic_t rx_dropped = ATOMIC_INIT(0);
 
 static void uart1_rx_cb(const struct device *dev, void *user_data) {
   uart_irq_update(uart1);
@@ -57,18 +58,15 @@ static void uart1_rx_cb(const struct device *dev, void *user_data) {
       if (k_msgq_put(&rx_msgq, rx_msg, K_NO_WAIT) == 0) {
         uint32_t used = k_msgq_num_used_get(&rx_msgq);
 
-        if (used > rx_peak) {
-          rx_peak = used;
+        if (used > atomic_get(&rx_peak)) {
+          atomic_set(&rx_peak, used);
         }
       } else {
-        rx_dropped++;
+        atomic_inc(&rx_dropped);
       }
     }
   }
 }
-
-static uint32_t rx_peak;
-static uint32_t rx_dropped;
 
 void rx_read_entry(void *, void *, void *) {
   uint8_t msg;
@@ -79,7 +77,8 @@ void rx_read_entry(void *, void *, void *) {
     if (msg == '\n') {
       gpio_pin_toggle_dt(&led);
 
-      printk("RX queue peak: %u, dropped: %u\n", rx_peak, rx_dropped);
+      printk("RX queue peak: %ld, dropped: %ld\n", (long)atomic_get(&rx_peak),
+             (long)atomic_get(&rx_dropped));
     }
   }
 }
