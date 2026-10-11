@@ -30,6 +30,20 @@ static void user_button_cb(const struct device *port, struct gpio_callback *cb,
   k_sem_give(&press_sem);
 }
 
+K_MSGQ_DEFINE(rx_msgq, 1, 10, 1);
+
+static uint8_t rx_msg[1];
+
+static void uart1_rx_cb(const struct device *dev, void *user_data) {
+  uart_irq_update(uart1);
+
+  if (uart_irq_rx_ready(uart1) == 1) {
+    while (uart_fifo_read(uart1, rx_msg, 1) > 0) {
+      k_msgq_put(&rx_msgq, rx_msg, K_NO_WAIT);
+    }
+  }
+}
+
 int main(void) {
 
   if (!device_is_ready(uart1)) {
@@ -64,6 +78,14 @@ int main(void) {
     printk("Error to configure interrupt!\n");
     return ret;
   }
+
+  ret = uart_irq_callback_user_data_set(uart1, &uart1_rx_cb, NULL);
+  if (ret != 0) {
+    printk("Error to set IRQ on uart1!");
+    return ret;
+  }
+
+  uart_irq_rx_enable(uart1);
 
   while (true) {
     ret = k_sem_take(&press_sem, K_FOREVER);
