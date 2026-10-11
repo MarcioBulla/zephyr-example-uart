@@ -44,6 +44,17 @@ static void uart1_rx_cb(const struct device *dev, void *user_data) {
   }
 }
 
+void rx_read_entry(void *, void *, void *) {
+  uint8_t msg;
+
+  while (true) {
+    k_msgq_get(&rx_msgq, &msg, K_FOREVER);
+    printk("Received: %c\n", msg);
+  }
+}
+
+K_THREAD_DEFINE(rx_read_tid, 1024, &rx_read_entry, NULL, NULL, NULL, 5, 0, 0);
+
 int main(void) {
 
   if (!device_is_ready(uart1)) {
