@@ -28,9 +28,17 @@ static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
 K_SEM_DEFINE(press_sem, 0, 10);
 
+static void user_button_work_handler(struct k_work *work) {
+  if (gpio_pin_get_dt(&user_button) == 1) {
+    k_sem_give(&press_sem);
+  }
+}
+
+K_WORK_DELAYABLE_DEFINE(user_button_work, user_button_work_handler);
+
 static void user_button_cb(const struct device *port, struct gpio_callback *cb,
                            gpio_port_pins_t pins) {
-  k_sem_give(&press_sem);
+  k_work_reschedule(&user_button_work, K_MSEC(30));
 }
 
 K_MSGQ_DEFINE(rx_msgq, 1, 10, 1);
