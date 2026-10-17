@@ -6,4 +6,5 @@ project(zephyr-example-uart)
 target_sources(app PRIVATE
     src/main.c
     src/button.c
+    src/uart_link.c
   )
