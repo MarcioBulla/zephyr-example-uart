@@ -11,7 +11,6 @@
 #include <stddef.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/sys/atomic.h>
 
 LOG_MODULE_REGISTER(uart_link, LOG_LEVEL_INF);
 
@@ -24,9 +23,6 @@ static const void *rx_context;
 
 static uint8_t rx_msg[1];
 
-static atomic_t rx_peak = ATOMIC_INIT(0);
-static atomic_t rx_dropped = ATOMIC_INIT(0);
-
 K_MSGQ_DEFINE(rx_msgq, 1, 16, 1);
 
 static void uart1_rx_cb(const struct device *dev, void *user_data) {
@@ -34,15 +30,7 @@ static void uart1_rx_cb(const struct device *dev, void *user_data) {
 
   if (uart_irq_rx_ready(uart1) == 1) {
     while (uart_fifo_read(uart1, rx_msg, 1) > 0) {
-      if (k_msgq_put(&rx_msgq, rx_msg, K_NO_WAIT) == 0) {
-        uint32_t used = k_msgq_num_used_get(&rx_msgq);
-
-        if (used > atomic_get(&rx_peak)) {
-          atomic_set(&rx_peak, used);
-        }
-      } else {
-        atomic_inc(&rx_dropped);
-      }
+      k_msgq_put(&rx_msgq, rx_msg, K_NO_WAIT);
     }
   }
 }
