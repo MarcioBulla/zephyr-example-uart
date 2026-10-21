@@ -24,14 +24,12 @@ static const char board[] = CONFIG_BOARD_TARGET;
 
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
-static void app_rx_byte(uint8_t byte, const void *user_data) {
+static void app_rx_byte(const uint8_t *data, size_t len, const void *user_data) {
   const struct gpio_dt_spec *led = user_data;
 
-  printk("%c", byte);
+  printk("%.*s\n", (int)len, (const char *)data);
 
-  if (byte == '\n') {
-    gpio_pin_toggle_dt(led);
-  }
+  gpio_pin_toggle_dt(led);
 }
 
 int main(void) {
@@ -61,9 +59,20 @@ int main(void) {
     return ret;
   }
 
-  char text_msg[sizeof(board) + 1];
-  snprintf(text_msg, sizeof(text_msg), "%s\n", board);
-  size_t size_msg = sizeof(text_msg) - 1;
+  uint8_t len = sizeof(board);
+
+  uint8_t text_msg[sizeof(board) + 4];
+
+  text_msg[0] = 0x14;
+  text_msg[1] = len;
+
+  memcpy(&text_msg[2], board, sizeof(board) - 1);
+
+  text_msg[sizeof(board) + 1] = '\n';
+  text_msg[sizeof(board) + 2] = 0xFF;
+  text_msg[sizeof(board) + 3] = 0xFF;
+
+  size_t size_msg = sizeof(text_msg);
 
   while (true) {
     ret = button_wait_press();
